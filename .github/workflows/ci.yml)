@@ -1,0 +1,81 @@
+name: Ghostwire CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # -----------------------------
+    # Python Linting
+    # -----------------------------
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.x"
+
+    - name: Install Python tools
+      run: |
+        pip install flake8
+
+    - name: Run Python linting
+      run: |
+        flake8 src/python || true
+
+    # -----------------------------
+    # Lua Linting
+    # -----------------------------
+    - name: Install Lua + Lint Tools
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y lua5.3 luarocks
+        luarocks install luacheck
+
+    - name: Run Lua linting
+      run: |
+        luacheck src/lua || true
+
+    # -----------------------------
+    # Folder Structure Validation
+    # -----------------------------
+    - name: Validate folder structure
+      run: |
+        echo "Checking required directories..."
+        REQUIRED_DIRS=(
+          "src"
+          "src/lua"
+          "src/python"
+          "src/modules"
+          "data"
+          "data/dialogue_trees"
+          "data/npc_profiles"
+          "data/behavior_graphs"
+          "tools"
+          "tools/packaging"
+          "tools/testing"
+          "docs"
+          ".github/workflows"
+        )
+
+        for DIR in "${REQUIRED_DIRS[@]}"; do
+          if [ ! -d "$DIR" ]; then
+            echo "❌ Missing directory: $DIR"
+            exit 1
+          else
+            echo "✔ Found: $DIR"
+          fi
+        done
+
+    # -----------------------------
+    # Success
+    # -----------------------------
+    - name: CI Completed
+      run: echo "Ghostwire CI workflow completed successfully."
